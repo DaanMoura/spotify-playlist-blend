@@ -17,7 +17,7 @@ function Playlists({ sdk }: { sdk: SpotifyApi }) {
 			<tr key={item.id}>
 				<td>{item.name}</td>
 				<td>{item.tracks?.total}</td>
-				<td>{item.followers?.total}</td>
+				<td>{item.id}</td>
 				<td>{item.href}</td>
 			</tr>
 		)
@@ -31,8 +31,8 @@ function Playlists({ sdk }: { sdk: SpotifyApi }) {
           <tr>
             <th>Name</th>
             <th>Tracks</th>
-            <th>Followers</th>
-						<th>URL</th>
+            <th>Id</th>
+			<th>URL</th>
           </tr>
         </thead>
         <tbody>{tableRows}</tbody>
