@@ -2,36 +2,41 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 import { accessTokenError } from "@/app/api/shared/errors";
 import { getSpotifySdk } from "../../shared/sdk";
-import { Episode, Page, PlaylistedTrack, SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
+import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
+import { PlaylistTrackWithFrequency, PlaylistWithTracks } from "@/types";
 
-type PlaylistTrack = Track | Episode
-
-interface PlaylistWithTracks {
-  name: string
-  url: string
-  tracks: PlaylistTrack[]
-}
+const SIZE = 50
 const getAllTracksOfPlaylist = async (sdk: SpotifyApi, playlistId: string): Promise<PlaylistWithTracks> => {
-  const tracks: PlaylistTrack[] = []
+  const tracks: Track[] = []
 
   const playlistInfo = await sdk.playlists.getPlaylist(
     playlistId,
     undefined,
   )
 
-  const playlistTacks = await sdk.playlists.getPlaylistItems(
+  let offset = 0
+
+  const playlistTracks = await sdk.playlists.getPlaylistItems(
     playlistId,
     undefined,
-    undefined,
-    50, 0
+    'items(track(name, id, artists(name), album(images))),total',
+    SIZE, offset, 'track'
   )
-  tracks.push(...playlistTacks.items.map(t => t.track))
 
-  let next = playlistTacks.next
-  while (next) {
-    const nextPlaylist = await sdk.makeRequest<Page<PlaylistedTrack>>('GET', next)
-    tracks.push(...nextPlaylist.items.map(t => t.track))
-    next = nextPlaylist.next
+  const total = playlistTracks.total
+  tracks.push(...playlistTracks.items.map(t => t.track) as Track[])
+
+  offset = offset + SIZE
+
+  while (offset < total) {
+    const nextPlaylist = await sdk.playlists.getPlaylistItems(
+      playlistId,
+      undefined,
+      'items(track(name, id, artists(name), album(images))),total',
+      SIZE, offset, 'track'
+    )
+    tracks.push(...nextPlaylist.items.map(t => t.track) as Track[])
+    offset = offset + SIZE
   }
 
   return {
@@ -41,9 +46,9 @@ const getAllTracksOfPlaylist = async (sdk: SpotifyApi, playlistId: string): Prom
   }
 }
 
-const rankTracksAmongPlaylists = (playlists: PlaylistWithTracks[], limit = 100) => {
+const rankTracksAmongPlaylists = (playlists: PlaylistWithTracks[]) => {
   const allTracks = playlists.flatMap(playlist => playlist.tracks)
-  const tracksWithFrequency: Record<string, { track: PlaylistTrack, frequency: number }> = {}
+  const tracksWithFrequency: Record<string, { track: Track, frequency: number }> = {}
 
   allTracks.forEach(track => {
     const trackId = track.id
@@ -53,15 +58,14 @@ const rankTracksAmongPlaylists = (playlists: PlaylistWithTracks[], limit = 100) 
     }
   })
 
-  const rankedTracks = Object.values(tracksWithFrequency).map(item => ({
+  const rankedTracks: PlaylistTrackWithFrequency[] = Object.values(tracksWithFrequency).map(item => ({
     ...item.track,
     frequency: item.frequency
   })).filter(track => track.frequency > 1)
 
   rankedTracks.sort((a, b) => b.frequency - a.frequency)
 
-  const max = Math.min(limit, rankedTracks.length)
-  return rankedTracks.slice(0, max)
+  return rankedTracks
 }
 
 export async function GET(req: NextRequest) {
