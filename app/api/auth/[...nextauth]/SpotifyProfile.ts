@@ -22,8 +22,11 @@ const scopes = [
   'user-read-email',
   'user-read-private',
   'user-library-read',
+  'user-library-modify',
   'playlist-read-private',
-  'playlist-read-collaborative'
+  'playlist-read-collaborative',
+  'playlist-modify-public',
+  'playlist-modify-private'
 ]
 
 authURL.searchParams.append('scope', scopes.join(' '))

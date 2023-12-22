@@ -9,3 +9,9 @@ export type PlaylistWithTracks = {
 export type PlaylistTrackWithFrequency = Track & {
   frequency: number
 }
+
+export type NewPlaylist = {
+  url: string
+  href: string
+  uri: string
+}

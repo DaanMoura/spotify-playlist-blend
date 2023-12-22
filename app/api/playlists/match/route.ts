@@ -19,7 +19,7 @@ const getAllTracksOfPlaylist = async (sdk: SpotifyApi, playlistId: string): Prom
   const playlistTracks = await sdk.playlists.getPlaylistItems(
     playlistId,
     undefined,
-    'items(track(name, id, artists(name), album(images))),total',
+    'items(track(name, id, uri, artists(name), album(images))),total',
     SIZE, offset, 'track'
   )
 
@@ -32,7 +32,7 @@ const getAllTracksOfPlaylist = async (sdk: SpotifyApi, playlistId: string): Prom
     const nextPlaylist = await sdk.playlists.getPlaylistItems(
       playlistId,
       undefined,
-      'items(track(name, id, artists(name), album(images))),total',
+      'items(track(name, id, uri, artists(name), album(images))),total',
       SIZE, offset, 'track'
     )
     tracks.push(...nextPlaylist.items.map(t => t.track) as Track[])
